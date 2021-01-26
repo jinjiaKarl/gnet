@@ -43,6 +43,7 @@ func (sl *spinLock) Unlock() {
 }
 
 // SpinLock creates a new spin-lock.
+// 自旋锁？？
 func SpinLock() sync.Locker {
 	return new(spinLock)
 }

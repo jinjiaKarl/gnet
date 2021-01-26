@@ -44,18 +44,23 @@ type Poller struct {
 // OpenPoller instantiates a poller.
 func OpenPoller() (poller *Poller, err error) {
 	poller = new(Poller)
+	// 创建epoll
 	if poller.fd, err = unix.EpollCreate1(unix.EPOLL_CLOEXEC); err != nil {
 		poller = nil
 		err = os.NewSyscallError("epoll_create1", err)
 		return
 	}
+	// eventfd(): 创建一个文件描述符efd，用于进程/线程之间的通信
+	// efd可以像普通的文件描述符一样，用epoll_wait进行监听：当epoll_wait检测到efd可读时，说明当前线程被其他线程通知notify
 	if poller.wfd, err = unix.Eventfd(0, unix.EFD_NONBLOCK|unix.EFD_CLOEXEC); err != nil {
 		_ = poller.Close()
 		poller = nil
 		err = os.NewSyscallError("eventfd", err)
 		return
 	}
+	// efd的全部缓冲区大小只有定长8byte
 	poller.wfdBuf = make([]byte, 8)
+	// 向epoll中添加wdf文件描述符
 	if err = poller.AddRead(poller.wfd); err != nil {
 		_ = poller.Close()
 		poller = nil

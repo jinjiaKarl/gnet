@@ -34,8 +34,10 @@ import (
 )
 
 type listener struct {
-	once          sync.Once
-	fd            int
+	once sync.Once
+	// 监听套接字
+	fd int
+	// 当前server监听的地址
 	lnaddr        net.Addr
 	reusePort     bool
 	addr, network string
@@ -45,6 +47,7 @@ func (ln *listener) Dup() (int, string, error) {
 	return netpoll.Dup(ln.fd)
 }
 
+// 初始化listener
 func (ln *listener) normalize() (err error) {
 	switch ln.network {
 	case "tcp", "tcp4", "tcp6":

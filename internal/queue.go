@@ -27,6 +27,7 @@ import "sync"
 type Job func() error
 
 // AsyncJobQueue queues pending tasks.
+// 异步队列
 type AsyncJobQueue struct {
 	lock sync.Locker
 	jobs []Job

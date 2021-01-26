@@ -58,6 +58,7 @@ type Options struct {
 	// need some kind of mechanisms like thread local storage, or invoke certain C libraries (such as graphics lib: GLib)
 	// that require thread-level manipulation via cgo, or want all I/O event-loops to actually run in parallel for a
 	// potential higher performance.
+	// ???
 	LockOSThread bool
 
 	// LB represents the load-balancing algorithm used when assigning new connections.

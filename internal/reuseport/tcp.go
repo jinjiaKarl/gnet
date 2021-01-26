@@ -36,11 +36,12 @@ var listenerBacklogMaxSize = maxListenerBacklog()
 func getTCPSockaddr(proto, addr string) (sa unix.Sockaddr, family int, tcpAddr *net.TCPAddr, err error) {
 	var tcpVersion string
 
+	// 解析tcp地址
 	tcpAddr, err = net.ResolveTCPAddr(proto, addr)
 	if err != nil {
 		return
 	}
-
+	// 确定tcp版本
 	tcpVersion, err = determineTCPProto(proto, tcpAddr)
 	if err != nil {
 		return
@@ -118,7 +119,7 @@ func tcpReusablePort(proto, addr string, reusePort bool) (fd int, netAddr net.Ad
 	if sockaddr, family, netAddr, err = getTCPSockaddr(proto, addr); err != nil {
 		return
 	}
-
+	// 创建监听套接字
 	if fd, err = sysSocket(family, unix.SOCK_STREAM, unix.IPPROTO_TCP); err != nil {
 		err = os.NewSyscallError("socket", err)
 		return
@@ -128,7 +129,7 @@ func tcpReusablePort(proto, addr string, reusePort bool) (fd int, netAddr net.Ad
 			_ = unix.Close(fd)
 		}
 	}()
-
+	// 添加 reuseport选项  这里为啥调用了两次？
 	if err = os.NewSyscallError("setsockopt", unix.SetsockoptInt(fd, unix.SOL_SOCKET, unix.SO_REUSEADDR, 1)); err != nil {
 		return
 	}
@@ -138,12 +139,15 @@ func tcpReusablePort(proto, addr string, reusePort bool) (fd int, netAddr net.Ad
 			return
 		}
 	}
-
+	// 绑定地址
 	if err = os.NewSyscallError("bind", unix.Bind(fd, sockaddr)); err != nil {
 		return
 	}
 
 	// Set backlog size to the maximum.
+	// 开始监听
+	// 第二个参数backlog为应用层指定的tcp全连接队列
+	// 真实tcp全连接队列长度: max(somaxconn, backlog)
 	err = os.NewSyscallError("listen", unix.Listen(fd, listenerBacklogMaxSize))
 
 	return

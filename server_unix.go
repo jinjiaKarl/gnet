@@ -140,10 +140,13 @@ func (svr *server) activateReactors(numEventLoop int) error {
 			el.ln = svr.ln
 			el.svr = svr
 			el.poller = p
+			// 0x10000 =  65536 = 64*1024, 64KB
 			el.packet = make([]byte, 0x10000)
 			el.connections = make(map[int]*conn)
 			el.eventHandler = svr.eventHandler
+			// 负载均衡
 			el.calibrateCallback = svr.lb.calibrate
+			// 将创建的eventloop放入负载均衡器中
 			svr.lb.register(el)
 		} else {
 			return err
@@ -230,19 +233,23 @@ func serve(eventHandler EventHandler, listener *listener, options *Options, prot
 	svr.opts = options
 	svr.eventHandler = eventHandler
 	svr.ln = listener
-
+	// 选择负载均衡算法
 	switch options.LB {
 	case RoundRobin:
+		// 轮询
 		svr.lb = new(roundRobinLoadBalancer)
 	case LeastConnections:
+		// 最少连接数
 		svr.lb = new(leastConnectionsLoadBalancer)
 	case SourceAddrHash:
+		// 源地址哈希
 		svr.lb = new(sourceAddrHashLoadBalancer)
 	}
 
 	svr.cond = sync.NewCond(&sync.Mutex{})
 	svr.ticktock = make(chan time.Duration, channelBuffer(1))
 	svr.logger = logging.DefaultLogger
+	// 选择TCP流编解码器
 	svr.codec = func() ICodec {
 		if options.Codec == nil {
 			return new(BuiltInFrameCodec)
@@ -263,7 +270,7 @@ func serve(eventHandler EventHandler, listener *listener, options *Options, prot
 	case Shutdown:
 		return nil
 	}
-
+	// 开始运行server
 	if err := svr.start(numEventLoop); err != nil {
 		svr.closeEventLoops()
 		svr.logger.Errorf("gnet server is stopping with error: %v", err)
