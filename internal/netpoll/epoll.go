@@ -35,7 +35,8 @@ import (
 
 // Poller represents a poller which is in charge of monitoring file-descriptors.
 type Poller struct {
-	fd            int    // epoll fd
+	fd int // epoll fd
+	// 用于进程间通信
 	wfd           int    // wake fd
 	wfdBuf        []byte // wfd buffer to read packet
 	asyncJobQueue internal.AsyncJobQueue
@@ -95,16 +96,19 @@ func (p *Poller) Trigger(job internal.Job) (err error) {
 
 // Polling blocks the current goroutine, waiting for network-events.
 func (p *Poller) Polling(callback func(fd int, ev uint32) error) error {
+	// 创建EpollEvent
 	el := newEventList(InitEvents)
 	var wakenUp bool
 
 	for {
+		// 第二个参数：从内核得到的事件集合
+		//  第三个参数：-1永久阻塞，0立刻返回，>0指定微秒
 		n, err := unix.EpollWait(p.fd, el.events, -1)
 		if err != nil && err != unix.EINTR {
 			logging.DefaultLogger.Warnf("Error occurs in epoll: %v", os.NewSyscallError("epoll_wait", err))
 			continue
 		}
-
+		// 处理每一个事件
 		for i := 0; i < n; i++ {
 			if fd := int(el.events[i].Fd); fd != p.wfd {
 				switch err = callback(fd, el.events[i].Events); err {
@@ -128,6 +132,7 @@ func (p *Poller) Polling(callback func(fd int, ev uint32) error) error {
 			case errors.ErrServerShutdown:
 				return err
 			default:
+				// 处理错误发生时，还剩下的任务
 				if q := len(leftover); q > 0 && q == p.asyncJobQueue.Batch(leftover) {
 					_, err = unix.Write(p.wfd, b)
 				}

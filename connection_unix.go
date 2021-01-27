@@ -42,8 +42,8 @@ type conn struct {
 	codec          ICodec                 // codec for TCP
 	buffer         []byte                 // reuse memory of inbound data as a temporary buffer
 	opened         bool                   // connection opened event fired
-	localAddr      net.Addr               // local addr
-	remoteAddr     net.Addr               // remote addr
+	localAddr      net.Addr               // local addr 本地监听地址
+	remoteAddr     net.Addr               // remote addr 连接的客户端地址
 	byteBuffer     *bytebuffer.ByteBuffer // bytes buffer for buffering current packet and data in ring-buffer
 	inboundBuffer  *ringbuffer.RingBuffer // buffer for data from client
 	outboundBuffer *ringbuffer.RingBuffer // buffer for data that is ready to write to client
@@ -71,6 +71,7 @@ func newTCPConn(fd int, el *eventloop, sa unix.Sockaddr, remoteAddr net.Addr) (c
 		noDelay = true
 	case TCPDelay:
 	}
+	// 设置socket选项
 	_ = netpoll.SetNoDelay(fd, noDelay)
 	_ = netpoll.SetKeepAlive(fd, el.svr.opts.TCPKeepAlive)
 	return

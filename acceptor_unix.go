@@ -30,6 +30,7 @@ import (
 	"golang.org/x/sys/unix"
 )
 
+// main refactor 处理客户端到来的连接
 func (svr *server) acceptNewConnection(fd int) error {
 	nfd, sa, err := unix.Accept(fd)
 	if err != nil {
@@ -43,7 +44,9 @@ func (svr *server) acceptNewConnection(fd int) error {
 	}
 
 	netAddr := netpoll.SockaddrToTCPOrUnixAddr(sa)
+	// 建立连接之后选择一个event loop
 	el := svr.lb.next(netAddr)
+	// 建立tcp连接
 	c := newTCPConn(nfd, el, sa, netAddr)
 
 	_ = el.poller.Trigger(func() (err error) {

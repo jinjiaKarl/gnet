@@ -35,8 +35,9 @@ import (
 )
 
 type server struct {
-	ln           *listener          // the listener for accepting new connections
-	lb           loadBalancer       // event-loops for handling events
+	ln *listener    // the listener for accepting new connections
+	lb loadBalancer // event-loops for handling events
+	// 管理reactor协程
 	wg           sync.WaitGroup     // event-loop close WaitGroup
 	opts         *Options           // options with server
 	once         sync.Once          // make sure only signalShutdown once
@@ -162,6 +163,7 @@ func (svr *server) activateReactors(numEventLoop int) error {
 		el.idx = -1
 		el.poller = p
 		el.svr = svr
+		// main reactor中epoll添加监听套接字
 		_ = el.poller.AddRead(el.ln.fd)
 		svr.mainLoop = el
 
