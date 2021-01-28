@@ -38,11 +38,19 @@ func SetKeepAlive(fd int, d time.Duration) error {
 		return errors.New("invalid time duration")
 	}
 	secs := int(d / time.Second)
+	// 设置SO_KEEPALIVE
 	if err := os.NewSyscallError("setsockopt", unix.SetsockoptInt(fd, unix.SOL_SOCKET, unix.SO_KEEPALIVE, 1)); err != nil {
 		return err
 	}
+	// 默认SO_KEEPALIVE 会在2个小时之后发送keepalive probe探测对方的tcp连接是否存在，但是2个小时时间太长，可以采用以下的方式修改
+	// TCP_KEEPCNT 判定断开前的KeepAlive探测次数
+	if err := os.NewSyscallError("setsockopt", unix.SetsockoptInt(fd, unix.IPPROTO_TCP, unix.TCP_KEEPCNT, 10)); err != nil {
+		return err
+	}
+	// TCP_KEEPINTVL 两次KeepAlive探测间的时间间隔
 	if err := os.NewSyscallError("setsockopt", unix.SetsockoptInt(fd, unix.IPPROTO_TCP, unix.TCP_KEEPINTVL, secs)); err != nil {
 		return err
 	}
+	// TCP_KEEPIDLE 开始首次keepalive探测前的tcp空闲时间
 	return os.NewSyscallError("setsockopt", unix.SetsockoptInt(fd, unix.IPPROTO_TCP, unix.TCP_KEEPIDLE, secs))
 }
