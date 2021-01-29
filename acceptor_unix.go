@@ -34,6 +34,7 @@ import (
 func (svr *server) acceptNewConnection(fd int) error {
 	nfd, sa, err := unix.Accept(fd)
 	if err != nil {
+		// unix.EAGAIN:  "there is no data available right now, try again later".
 		if err == unix.EAGAIN {
 			return nil
 		}
@@ -49,6 +50,7 @@ func (svr *server) acceptNewConnection(fd int) error {
 	// 建立tcp连接
 	c := newTCPConn(nfd, el, sa, netAddr)
 
+	// 添加回调，将连接套接字加入epoll_tree
 	_ = el.poller.Trigger(func() (err error) {
 		if err = el.poller.AddRead(nfd); err != nil {
 			return

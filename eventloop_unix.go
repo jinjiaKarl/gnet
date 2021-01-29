@@ -51,7 +51,7 @@ type internalEventloop struct {
 	poller            *netpoll.Poller         // epoll or kqueue
 	packet            []byte                  // read packet buffer whose capacity is 64KB
 	connCount         int32                   // number of active connections in event-loop
-	connections       map[int]*conn           // loop connections fd -> conn
+	connections       map[int]*conn           // loop connections fd -> conn  连接套接字--->conn
 	eventHandler      EventHandler            // user eventHandler
 	calibrateCallback func(*eventloop, int32) // callback func for re-adjusting connCount
 }
@@ -119,8 +119,11 @@ func (el *eventloop) loopOpen(c *conn) error {
 	c.opened = true
 	el.calibrateCallback(el, 1)
 
+	// 建立连接时调用
+	// 调用业务实现的方法
 	out, action := el.eventHandler.OnOpened(c)
 	if out != nil {
+		// 向client端写入数据
 		c.open(out)
 	}
 
