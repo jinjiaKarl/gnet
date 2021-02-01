@@ -88,13 +88,16 @@ var (
 
 // Trigger wakes up the poller blocked in waiting for network-events and runs jobs in asyncJobQueue.
 func (p *Poller) Trigger(job internal.Job) (err error) {
+	// 为什么这里要判断返回1？
 	if p.asyncJobQueue.Push(job) == 1 {
+		// 向通信的fd写入内容
 		_, err = unix.Write(p.wfd, b)
 	}
 	return os.NewSyscallError("write", err)
 }
 
 // Polling blocks the current goroutine, waiting for network-events.
+// event-loop
 func (p *Poller) Polling(callback func(fd int, ev uint32) error) error {
 	// 创建EpollEvent
 	el := newEventList(InitEvents)
@@ -105,10 +108,13 @@ func (p *Poller) Polling(callback func(fd int, ev uint32) error) error {
 		//  第三个参数：-1永久阻塞，0立刻返回，>0指定微秒
 		n, err := unix.EpollWait(p.fd, el.events, -1)
 		if err != nil && err != unix.EINTR {
+			// EINTR表示，该系统调用被信号中断
 			logging.DefaultLogger.Warnf("Error occurs in epoll: %v", os.NewSyscallError("epoll_wait", err))
 			continue
 		}
 		// 处理每一个事件
+		// 这里使用的是LT模式，因此每个callback中不会有循环去read
+		// 如果使用ET模式，需要在callback中循环调用read，当返回错误为EAGAIN时退出循环
 		for i := 0; i < n; i++ {
 			if fd := int(el.events[i].Fd); fd != p.wfd {
 				switch err = callback(fd, el.events[i].Events); err {
@@ -123,7 +129,7 @@ func (p *Poller) Polling(callback func(fd int, ev uint32) error) error {
 				_, _ = unix.Read(p.wfd, p.wfdBuf)
 			}
 		}
-
+		// 执行异步队列中的任务
 		if wakenUp {
 			wakenUp = false
 			leftover, err := p.asyncJobQueue.ForEach()
@@ -132,7 +138,7 @@ func (p *Poller) Polling(callback func(fd int, ev uint32) error) error {
 			case errors.ErrServerShutdown:
 				return err
 			default:
-				// 处理错误发生时，还剩下的任务
+				// 处理当错误发生时，还剩下的任务
 				if q := len(leftover); q > 0 && q == p.asyncJobQueue.Batch(leftover) {
 					_, err = unix.Write(p.wfd, b)
 				}
@@ -146,6 +152,7 @@ func (p *Poller) Polling(callback func(fd int, ev uint32) error) error {
 	}
 }
 
+// epoll默认是LT水平触发
 const (
 	readEvents      = unix.EPOLLPRI | unix.EPOLLIN
 	writeEvents     = unix.EPOLLOUT

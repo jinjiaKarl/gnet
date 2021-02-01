@@ -265,6 +265,7 @@ func (el *eventloop) loopTicker() {
 	)
 	for {
 		err = el.poller.Trigger(func() (err error) {
+			// 调用业务自定义的Tick函数
 			delay, action := el.eventHandler.Tick()
 			el.svr.ticktock <- delay
 			switch action {
@@ -278,6 +279,7 @@ func (el *eventloop) loopTicker() {
 			el.svr.logger.Errorf("Failed to awake poller in event-loop(%d), error:%v, stopping ticker", el.idx, err)
 			break
 		}
+		// channel的第二个返回值，表示该channel是否被关闭
 		if delay, open = <-el.svr.ticktock; open {
 			time.Sleep(delay)
 		} else {

@@ -50,6 +50,7 @@ type server struct {
 	eventHandler EventHandler       // user eventHandler
 }
 
+// listen ip ---> server
 var serverFarm sync.Map
 
 func (svr *server) isInShutdown() bool {
@@ -91,6 +92,7 @@ func (svr *server) closeEventLoops() {
 }
 
 func (svr *server) startSubReactors() {
+	// start 每一个event loop
 	svr.lb.iterate(func(i int, el *eventloop) bool {
 		svr.wg.Add(1)
 		go func() {
@@ -136,6 +138,7 @@ func (svr *server) activateEventLoops(numEventLoop int) (err error) {
 
 func (svr *server) activateReactors(numEventLoop int) error {
 	for i := 0; i < numEventLoop; i++ {
+		// 创建epoll红黑树
 		if p, err := netpoll.OpenPoller(); err == nil {
 			el := new(eventloop)
 			el.ln = svr.ln

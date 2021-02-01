@@ -32,6 +32,7 @@ import (
 
 // main refactor 处理客户端到来的连接
 func (svr *server) acceptNewConnection(fd int) error {
+	// accept()从tcp的accept queue中取出来一个连接
 	nfd, sa, err := unix.Accept(fd)
 	if err != nil {
 		// unix.EAGAIN:  "there is no data available right now, try again later".
@@ -46,6 +47,7 @@ func (svr *server) acceptNewConnection(fd int) error {
 
 	netAddr := netpoll.SockaddrToTCPOrUnixAddr(sa)
 	// 建立连接之后选择一个event loop
+	// 将该连接套接字添加到该event loop的epoll红黑树上
 	el := svr.lb.next(netAddr)
 	// 建立tcp连接
 	c := newTCPConn(nfd, el, sa, netAddr)

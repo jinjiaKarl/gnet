@@ -33,7 +33,7 @@ func (svr *server) activateMainReactor(lockOSThread bool) {
 	}
 
 	defer svr.signalShutdown()
-
+	// main reactor的回调，处理客户端到来的连接。
 	err := svr.mainLoop.poller.Polling(func(fd int, ev uint32) error { return svr.acceptNewConnection(fd) })
 	svr.logger.Infof("Main reactor is exiting due to error: %v", err)
 }
@@ -55,7 +55,7 @@ func (svr *server) activateSubReactor(el *eventloop, lockOSThread bool) {
 	if el.idx == 0 && svr.opts.Ticker {
 		go el.loopTicker()
 	}
-
+	// sub reactor的回调处理已经连接的socket的通信
 	err := el.poller.Polling(func(fd int, ev uint32) error {
 		if c, ack := el.connections[fd]; ack {
 			switch c.outboundBuffer.IsEmpty() {
