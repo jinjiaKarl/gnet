@@ -37,7 +37,7 @@ import (
 type server struct {
 	ln *listener    // the listener for accepting new connections
 	lb loadBalancer // event-loops for handling events
-	// 管理reactor协程
+	// 管理reactor协程, 包括main和sub
 	wg           sync.WaitGroup     // event-loop close WaitGroup
 	opts         *Options           // options with server
 	once         sync.Once          // make sure only signalShutdown once

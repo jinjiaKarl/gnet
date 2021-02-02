@@ -315,6 +315,7 @@ func TestServe(t *testing.T) {
 	// the writes to the server will be random sizes. 0KB - 1MB.
 	// the server will echo back the data.
 	// waits for graceful connection closing.
+	// t.Run()定义子测试
 	t.Run("poll", func(t *testing.T) {
 		t.Run("tcp", func(t *testing.T) {
 			t.Run("1-loop", func(t *testing.T) {
@@ -483,9 +484,11 @@ func (s *testServer) React(frame []byte, c Conn) (out []byte, action Action) {
 			// just for test
 			_ = c.BufferLength()
 			c.ShiftN(1)
-
+			// 如果有阻塞的业务逻辑，放入协程池执行任务
+			// 可以避免阻塞event-loop线程
 			_ = s.workerPool.Submit(
 				func() {
+					// 把处理完阻塞逻辑之后得到的输出数据异步写回客户端
 					_ = c.AsyncWrite(buf.Bytes())
 				})
 			return
