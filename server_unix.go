@@ -53,6 +53,7 @@ type server struct {
 // listen ip ---> server
 var serverFarm sync.Map
 
+// 这里判断是否关闭，值得学习
 func (svr *server) isInShutdown() bool {
 	return atomic.LoadInt32(&svr.inShutdown) == 1
 }
@@ -66,6 +67,7 @@ func (svr *server) waitForShutdown() {
 
 // signalShutdown signals the server to shut down.
 func (svr *server) signalShutdown() {
+	// sync.Do()的实现，就是单例模式中的double check
 	svr.once.Do(func() {
 		svr.cond.L.Lock()
 		svr.cond.Signal()
@@ -167,6 +169,7 @@ func (svr *server) activateReactors(numEventLoop int) error {
 		el.poller = p
 		el.svr = svr
 		// main reactor中epoll添加监听套接字
+		// 因此main reactor的epoll中只有监听套接字和wfd两个套接字
 		_ = el.poller.AddRead(el.ln.fd)
 		svr.mainLoop = el
 

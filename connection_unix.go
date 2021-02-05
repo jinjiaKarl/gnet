@@ -51,7 +51,7 @@ type conn struct {
 
 func newTCPConn(fd int, el *eventloop, sa unix.Sockaddr, remoteAddr net.Addr) (c *conn) {
 	c = &conn{
-		fd:             fd,
+		fd:             fd, // 连接套接字
 		sa:             sa,
 		loop:           el,
 		codec:          el.svr.codec,

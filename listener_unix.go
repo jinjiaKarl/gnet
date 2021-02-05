@@ -38,8 +38,9 @@ type listener struct {
 	// 监听套接字
 	fd int
 	// 当前server监听的地址
-	lnaddr        net.Addr
-	reusePort     bool
+	lnaddr    net.Addr
+	reusePort bool
+	// 监听的地址
 	addr, network string
 }
 

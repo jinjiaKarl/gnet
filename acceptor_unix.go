@@ -46,7 +46,7 @@ func (svr *server) acceptNewConnection(fd int) error {
 	}
 
 	netAddr := netpoll.SockaddrToTCPOrUnixAddr(sa)
-	// 建立连接之后选择一个event loop
+	// 建立连接之后使用负载均衡算法选择一个event loop
 	// 将该连接套接字添加到该event loop的epoll红黑树上
 	el := svr.lb.next(netAddr)
 	// 建立tcp连接

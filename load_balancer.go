@@ -58,7 +58,7 @@ type (
 	// roundRobinLoadBalancer with Round-Robin algorithm.
 	roundRobinLoadBalancer struct {
 		nextLoopIndex int
-		eventLoops    []*eventloop
+		eventLoops    []*eventloop // 每个sub reaactor对应的event loop
 		size          int
 	}
 
